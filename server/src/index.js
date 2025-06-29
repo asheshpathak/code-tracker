@@ -28,106 +28,7 @@ async function startServer() {
   });
 }
 
-// app.get('/', (req, res) => {
-//   res.send('Code Tracker Dashboard API');
-// });
-
-// app.get('/api/problems', (req, res) => {
-//     const response = [
-//   {
-//     id: '1',
-//     title: 'Two Sum',
-//     platform: 'LeetCode',
-//     difficulty: 'easy',
-//     topic: 'Arrays',
-//     timeSpent: 15,
-//     outcome: 'solved',
-//     date: 'Today',
-//     link: 'https://leetcode.com/problems/two-sum/',
-//     tags: ['Array', 'Hash Table', 'Two Pointers'],
-//     isRevision: false,
-//   },
-//   {
-//     id: '2',
-//     title: 'Longest Substring Without Repeating Characters',
-//     platform: 'LeetCode',
-//     difficulty: 'medium',
-//     topic: 'Strings',
-//     timeSpent: 45,
-//     outcome: 'hints',
-//     date: 'Yesterday',
-//     link: 'https://leetcode.com/problems/longest-substring-without-repeating-characters/',
-//     tags: ['String', 'Sliding Window', 'Hash Map'],
-//     isRevision: false,
-//   },
-//   {
-//     id: '3',
-//     title: 'Regular Expression Matching',
-//     platform: 'LeetCode',
-//     difficulty: 'hard',
-//     topic: 'Dynamic Programming',
-//     timeSpent: 90,
-//     outcome: 'failed',
-//     date: '2 days ago',
-//     link: 'https://leetcode.com/problems/regular-expression-matching/',
-//     tags: ['DP', 'Recursion', 'String'],
-//     isRevision: false,
-//   },
-//   {
-//     id: '4',
-//     title: 'Maximum Subarray',
-//     platform: 'LeetCode',
-//     difficulty: 'medium',
-//     topic: 'Arrays',
-//     timeSpent: 25,
-//     outcome: 'solved',
-//     date: '3 days ago',
-//     tags: ['Array', "Kadane's Algorithm", 'DP'],
-//     isRevision: false,
-//   },
-//   {
-//     id: '5',
-//     title: 'Valid Parentheses',
-//     platform: 'LeetCode',
-//     difficulty: 'easy',
-//     topic: 'Stack',
-//     timeSpent: 12,
-//     outcome: 'solved',
-//     date: '4 days ago',
-//     tags: ['Stack', 'String'],
-//     isRevision: false,
-//   },
-//   {
-//     id: '6',
-//     title: 'Merge Two Sorted Lists',
-//     platform: 'LeetCode',
-//     difficulty: 'easy',
-//     topic: 'Linked List',
-//     timeSpent: 18,
-//     outcome: 'solved',
-//     date: '5 days ago',
-//     tags: ['Linked List', 'Recursion'],
-//     isRevision: false,
-//   },
-// ];
-//     res.status(200).json(response);
-// });
-
-// app.listen(PORT, () => {
-//   console.log(`🚀 Server is running on http://localhost:${PORT}`);
-// });
-
-// Handle client-side routing (SPA fallback)
-app.get('*', (req, res) => {
-  // Don't serve index.html for API routes
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'API route not found' });
-  }
-  
-  res.sendFile(path.join(staticPath, 'index.html'));
-});
-
-app.post('/users', async (req, res) => {
+app.post('/api/users', async (req, res) => {
   try {
     const { firstName, lastName, email } = req.body;
     
@@ -152,7 +53,7 @@ app.post('/users', async (req, res) => {
 });
 
 // GET All Users
-app.get('/users', async (req, res) => {
+app.get('/api/users', async (req, res) => {
   try {
     const users = await User.findAll({
       include: [{
@@ -208,7 +109,7 @@ app.get('/users/:id', async (req, res) => {
 // ========== PROBLEM ROUTES ==========
 
 // CREATE Problem
-app.post('/users/:userId/problems', async (req, res) => {
+app.post('/api/users/:userId/problems', async (req, res) => {
   try {
     const { userId } = req.params;
     const { title, platform, difficulty, topic, timeSpent, outcome, date, link, tags, isRevision } = req.body;
@@ -451,6 +352,16 @@ app.use((error, req, res, next) => {
     message: 'Internal server error',
     error: process.env.NODE_ENV === 'development' ? error.message : {}
   });
+});
+
+// Handle client-side routing (SPA fallback)
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  
+  res.sendFile(path.join(staticPath, 'index.html'));
 });
 
 // Start the server

@@ -6,7 +6,7 @@ import ProblemsTable from './components/ProblemsTable';
 import AddProblemForm from './components/AddProblemForm';
 import { mockProblems, mockAnalytics } from './utils/mockData';
 import type { Problem, NewProblemForm } from './types';
-import {fetchProblems} from './utils';
+import { apiClient } from './utils/apis';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -41,8 +41,8 @@ function App() {
 
   const loadProblems = async () => {
     try {
-      const fetchedProblems = await fetchProblems();
-      if (fetchedProblems) {
+      const fetchedProblems = await apiClient.getProblems() as { data: Problem[] };
+      if (fetchedProblems && fetchedProblems.data) {
         setProblems(fetchedProblems.data);
         console.log('Fetched problems:', fetchedProblems);
       }
