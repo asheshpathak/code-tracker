@@ -10,10 +10,8 @@
     "build": "tsc && vite build",
     "build:server": "cd server && npm run build",
     "start": "cd server && npm start",
-    "install": "npm install && npm run install:server",
     "install:server": "cd server && npm install",
-    "install:all": "npm install && npm run install:server",
-    "heroku-prebuild": "npm run install:all",
+    "heroku-prebuild": "npm run install:server",
     "heroku-postbuild": "npm run build && npm run build:server"
   },
   "dependencies": {
