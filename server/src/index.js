@@ -2,7 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const { User, Problem, sequelize } = require('./models');
 const { Op } = require('sequelize');
+const path = require('path');
+const { fileURLToPath } = require('url');
 const initializeDatabase = require('./database/init');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // Initialize database connection
 const app = express();
@@ -10,6 +14,9 @@ const PORT = process.env.PORT || 7007;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+const staticPath = path.join(__dirname, '../../dist');
+app.use(express.static(staticPath));
 
 async function startServer() {
   await initializeDatabase();
@@ -109,6 +116,16 @@ async function startServer() {
 // app.listen(PORT, () => {
 //   console.log(`🚀 Server is running on http://localhost:${PORT}`);
 // });
+
+// Handle client-side routing (SPA fallback)
+app.get('*', (req, res) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ error: 'API route not found' });
+  }
+  
+  res.sendFile(path.join(staticPath, 'index.html'));
+});
 
 app.post('/users', async (req, res) => {
   try {
