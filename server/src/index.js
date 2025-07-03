@@ -6,6 +6,8 @@ const path = require('path');
 const { fileURLToPath } = require('url');
 const initializeDatabase = require('./database/init');
 const dotenv = require('dotenv');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 dotenv.config();
 
 // Initialize database connection
@@ -20,7 +22,7 @@ app.use(express.static(staticPath));
 
 async function startServer() {
   await initializeDatabase();
-  
+
   app.listen(PORT, () => {
     console.log(`🚀 Coding Problem Tracker API running on port ${PORT}`);
     console.log(`📊 Database: SQLite3`);
@@ -28,25 +30,113 @@ async function startServer() {
   });
 }
 
-app.post('/api/users', async (req, res) => {
+const generateToken = (user) => {
+  return jwt.sign({ email: user.email }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+  });
+};
+
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email and password are required'
+    });
+  }
+
+  const user = await User.findOne({ where: { email } });
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: 'User not found'
+    });
+  }
+
+  const isPasswordValid = await bcrypt.compare(password, user.password);
+  if (!isPasswordValid) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid password'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Login successful',
+    data: user,
+    token: generateToken(user)
+  });
+});
+
+app.post('/api/auth/register', async (req, res) => {
   try {
-    const { firstName, lastName, email } = req.body;
-    
-    const user = await User.create({
+    const { firstName, lastName, email, password } = req.body;
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = {
+      email,
+      password: hashedPassword,
       firstName,
       lastName,
-      email
-    });
-    
+    };
+
+    const user = await User.create(newUser);
+    const token = generateToken(newUser);
+
+    console.log('Token generated:', token);
+
     res.status(201).json({
       success: true,
       message: 'User created successfully',
-      data: user
+      data: user,
+      token: token
     });
   } catch (error) {
     res.status(400).json({
       success: false,
       message: 'Error creating user',
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/auth/verify', async (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+  if (!token) {
+    return res.status(400).json({
+      success: false,
+      message: 'Token is required'
+    });
+  }
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Decoded token:', decoded);
+    const { email } = decoded;
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+    res.status(200).json({
+      success: true,
+      message: 'Token is valid',
+      data: user
+    });
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid token',
       error: error.message
     });
   }
@@ -61,7 +151,7 @@ app.get('/api/users', async (req, res) => {
         as: 'problems'
       }]
     });
-    
+
     res.status(200).json({
       success: true,
       data: users
@@ -85,14 +175,14 @@ app.get('/users/:id', async (req, res) => {
         order: [['date', 'DESC']]
       }]
     });
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: user
@@ -113,7 +203,7 @@ app.post('/api/users/:userId/problems', async (req, res) => {
   try {
     const { userId } = req.params;
     const { title, platform, difficulty, topic, timeSpent, outcome, date, link, tags, isRevision } = req.body;
-    
+
     // Check if user exists
     const user = await User.findByPk(userId);
     if (!user) {
@@ -122,7 +212,7 @@ app.post('/api/users/:userId/problems', async (req, res) => {
         message: 'User not found'
       });
     }
-    
+
     const problem = await Problem.create({
       title,
       platform,
@@ -136,7 +226,7 @@ app.post('/api/users/:userId/problems', async (req, res) => {
       isRevision: isRevision || false,
       userId
     });
-    
+
     res.status(201).json({
       success: true,
       message: 'Problem created successfully',
@@ -156,15 +246,15 @@ app.get('/api/users/:userId/problems', async (req, res) => {
   try {
     const { userId } = req.params;
     const { difficulty, platform, outcome, topic } = req.query;
-    
+
     let whereClause = { userId };
-    
+
     // Add filters if provided
     if (difficulty) whereClause.difficulty = difficulty;
     if (platform) whereClause.platform = platform;
     if (outcome) whereClause.outcome = outcome;
     if (topic) whereClause.topic = { [Op.like]: `%${topic}%` };
-    
+
     const problems = await Problem.findAll({
       where: whereClause,
       include: [{
@@ -174,7 +264,7 @@ app.get('/api/users/:userId/problems', async (req, res) => {
       }],
       order: [['date', 'DESC']]
     });
-    
+
     res.status(200).json({
       success: true,
       data: problems
@@ -198,14 +288,14 @@ app.get('/problems/:id', async (req, res) => {
         attributes: ['firstName', 'lastName', 'email']
       }]
     });
-    
+
     if (!problem) {
       return res.status(404).json({
         success: false,
         message: 'Problem not found'
       });
     }
-    
+
     res.status(200).json({
       success: true,
       data: problem
@@ -223,16 +313,16 @@ app.get('/problems/:id', async (req, res) => {
 app.put('/problems/:id', async (req, res) => {
   try {
     const problem = await Problem.findByPk(req.params.id);
-    
+
     if (!problem) {
       return res.status(404).json({
         success: false,
         message: 'Problem not found'
       });
     }
-    
+
     await problem.update(req.body);
-    
+
     res.status(200).json({
       success: true,
       message: 'Problem updated successfully',
@@ -251,16 +341,16 @@ app.put('/problems/:id', async (req, res) => {
 app.delete('/problems/:id', async (req, res) => {
   try {
     const problem = await Problem.findByPk(req.params.id);
-    
+
     if (!problem) {
       return res.status(404).json({
         success: false,
         message: 'Problem not found'
       });
     }
-    
+
     await problem.destroy();
-    
+
     res.status(200).json({
       success: true,
       message: 'Problem deleted successfully'
@@ -280,11 +370,11 @@ app.delete('/problems/:id', async (req, res) => {
 app.get('/users/:userId/stats', async (req, res) => {
   try {
     const { userId } = req.params;
-    
+
     const totalProblems = await Problem.count({ where: { userId } });
     const solvedProblems = await Problem.count({ where: { userId, outcome: 'solved' } });
     const totalTimeSpent = await Problem.sum('timeSpent', { where: { userId } });
-    
+
     const difficultyStats = await Problem.findAll({
       where: { userId },
       attributes: [
@@ -294,7 +384,7 @@ app.get('/users/:userId/stats', async (req, res) => {
       group: ['difficulty'],
       raw: true
     });
-    
+
     const platformStats = await Problem.findAll({
       where: { userId },
       attributes: [
@@ -304,7 +394,7 @@ app.get('/users/:userId/stats', async (req, res) => {
       group: ['platform'],
       raw: true
     });
-    
+
     res.status(200).json({
       success: true,
       data: {
@@ -360,7 +450,7 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API route not found' });
   }
-  
+
   res.sendFile(path.join(staticPath, 'index.html'));
 });
 

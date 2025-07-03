@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Save, Loader2, CheckCircle, FileText } from 'lucide-react';
+import { Save, Loader2, FileText } from 'lucide-react';
 import type { NewProblemForm } from '../types';
+import { apiClient } from '../utils/apis';
+import { AuthContext } from './AuthContext';
 
 interface AddProblemFormProps {
   onSubmit: (data: NewProblemForm) => void;
 }
 
 const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
+  const { user } = React.useContext(AuthContext);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<NewProblemForm>({
     title: '',
@@ -17,7 +20,7 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
     outcome: '',
     timeSpent: 0,
     link: '',
-    tags: '',
+    tags: [],
     approachNotes: '',
     isRevision: false,
     codeLink: '',
@@ -26,12 +29,19 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    onSubmit(formData);
-    
+
+    if (user && user.id) {
+      try {
+        // Create problem using API client
+        await apiClient.createProblem(formData, { id: user.id });
+        onSubmit(formData);
+      } catch (error) {
+        console.error('Error creating problem:', error);
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     // Reset form
     setFormData({
       title: '',
@@ -42,12 +52,12 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
       outcome: '',
       timeSpent: 0,
       link: '',
-      tags: '',
+      tags: [],
       approachNotes: '',
       isRevision: false,
       codeLink: '',
     });
-    
+
     setIsSubmitting(false);
   };
 
@@ -74,7 +84,7 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
           Log New Problem
         </h2>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="p-5">
         <div className="space-y-4">
           <div>
@@ -107,11 +117,11 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
                 className="w-full px-2.5 py-2 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="">Select platform</option>
-                <option value="leetcode">LeetCode</option>
-                <option value="hackerrank">HackerRank</option>
-                <option value="codechef">CodeChef</option>
-                <option value="codeforces">Codeforces</option>
-                <option value="atcoder">AtCoder</option>
+                <option value="LeetCode">LeetCode</option>
+                <option value="HackerRank">HackerRank</option>
+                <option value="CodeChef">CodeChef</option>
+                <option value="Codeforces">Codeforces</option>
+                <option value="AtCoder">AtCoder</option>
               </select>
             </div>
             <div>
@@ -188,6 +198,9 @@ const AddProblemForm: React.FC<AddProblemFormProps> = ({ onSubmit }) => {
               >
                 <option value="">Select outcome</option>
                 <option value="solved">Solved on own</option>
+                <option value="attempted">Attempted</option>
+                <option value="stuck">Stuck</option>
+                <option value="skipped">Skipped</option>
                 <option value="hints">Needed hints</option>
                 <option value="failed">Couldn't solve</option>
               </select>

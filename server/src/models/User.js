@@ -30,7 +30,15 @@ module.exports = (sequelize) => {
       validate: {
         isEmail: true
       }
-    }
+    },
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        notEmpty: true,
+        len: [6, 100]
+      }
+    },
   }, {
     tableName: 'users',
     timestamps: true

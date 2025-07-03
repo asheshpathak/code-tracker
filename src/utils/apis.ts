@@ -18,11 +18,11 @@ class ApiClient {
     };
 
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    
+
     return response.json();
   }
 
@@ -34,20 +34,32 @@ class ApiClient {
     });
   }
 
-  async register(userData: any) {
+  async register(firstName: string, lastName: string, email: string, password: string) {
+    console.log('API CLIENT:');
+    console.log('Registering user:', { firstName, lastName, email, password });
+    const userData = { firstName, lastName, email, password };
     return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     });
   }
 
-  // Problems methods
-  async getProblems() {
-    return this.request('/users/1/problems');
+  async verifyToken(token: string) {
+    return this.request('/auth/verify', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 
-  async createProblem(problemData: any) {
-    return this.request('/problems', {
+  // Problems methods
+  async getProblems(id: string) {
+    return this.request(`/users/${id}/problems`);
+  }
+
+  async createProblem(problemData: any, user: { id: string | undefined }) {
+    return this.request(`/users/${user.id}/problems`, {
       method: 'POST',
       body: JSON.stringify(problemData),
     });

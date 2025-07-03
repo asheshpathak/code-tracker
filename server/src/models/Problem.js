@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isIn: [['LeetCode', 'HackerRank', 'Codeforces', 'AtCoder', 'CodeChef', 'Other']]
+        isIn: [['LeetCode', 'HackerRank', 'Codeforces', 'AtCoder', 'CodeChef', 'other']]
       }
     },
     difficulty: {
@@ -48,7 +48,7 @@ module.exports = (sequelize) => {
       type: DataTypes.STRING,
       allowNull: false,
       validate: {
-        isIn: [['solved', 'attempted', 'stuck', 'skipped']]
+        isIn: [['solved', 'attempted', 'stuck', 'skipped', 'hints', 'failed']]
       }
     },
     date: {

@@ -9,7 +9,7 @@ export interface Problem {
   outcome: 'solved' | 'hints' | 'failed';
   date: string;
   link?: string;
-  tags: string[];
+  tags: string;
   approachNotes?: string;
   codeLink?: string;
   isRevision: boolean;
@@ -35,7 +35,7 @@ export interface NewProblemForm {
   outcome: 'solved' | 'hints' | 'failed' | '';
   timeSpent: number;
   link: string;
-  tags: string;
+  tags: [];
   approachNotes: string;
   isRevision: boolean;
   codeLink: string;

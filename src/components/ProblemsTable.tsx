@@ -9,6 +9,26 @@ interface ProblemsTableProps {
 }
 
 const ProblemsTable: React.FC<ProblemsTableProps> = ({ problems, onAddProblem }) => {
+
+  function formatDateToCustomString(isoDate: string): string {
+    const options: Intl.DateTimeFormatOptions = {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Kolkata"
+    };
+
+    const raw = new Date(isoDate).toLocaleString("en-GB", options).replace(",", "");
+
+    // Split into parts: "07 Jul 2025 02:11 PM"
+    const [day, month, year, time, period] = raw.split(" ");
+
+    return `${day} ${month}, ${year} ${time} ${period}`;
+  }
+
   return (
     <div className="bg-white border border-gray-200 rounded-md shadow-sm overflow-hidden">
       <div className="bg-gray-50 border-b border-gray-200 px-5 py-4 flex justify-between items-center">
@@ -27,7 +47,7 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ problems, onAddProblem })
           </button>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
           <thead>
@@ -42,18 +62,25 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ problems, onAddProblem })
             </tr>
           </thead>
           <tbody>
+            {problems.length === 0 && (
+              <tr>
+                <td colSpan={7} className="px-3 py-6 text-center text-gray-500">
+                  No problems logged yet. Click "Add Problem" to get started.
+                </td>
+              </tr>
+            )}
             {problems.map((problem, index) => (
-              <tr 
-                key={problem.id} 
+              <tr
+                key={problem.id}
                 className={`hover:bg-gray-50 cursor-pointer ${index !== problems.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
                 <td className="px-3 py-3">
                   <div className="max-w-xs">
                     <div className="font-medium text-gray-900 mb-1">
                       {problem.link ? (
-                        <a 
-                          href={problem.link} 
-                          target="_blank" 
+                        <a
+                          href={problem.link}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline inline-flex items-center gap-1"
                         >
@@ -65,14 +92,15 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ problems, onAddProblem })
                       )}
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {problem.tags.map((tag, tagIndex) => (
-                        <span 
-                          key={tagIndex}
-                          className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-medium"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                      {typeof problem?.tags === "string" &&
+                        problem.tags.split(',').map((tag, tagIndex) => (
+                          <span
+                            key={tagIndex}
+                            className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[9px] font-medium"
+                          >
+                            {tag}
+                          </span>
+                        ))}
                     </div>
                   </div>
                 </td>
@@ -90,15 +118,15 @@ const ProblemsTable: React.FC<ProblemsTableProps> = ({ problems, onAddProblem })
                     {problem.outcome.charAt(0).toUpperCase() + problem.outcome.slice(1)}
                   </div>
                 </td>
-                <td className="px-3 py-3 text-gray-500 text-[11px]">{problem.date}</td>
+                <td className="px-3 py-3 text-gray-500 text-[11px]">{formatDateToCustomString(problem.date)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      
+
       <div className="bg-gray-50 border-t border-gray-200 px-5 py-3 flex gap-2">
-        <button 
+        <button
           onClick={onAddProblem}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 transition-colors"
         >
